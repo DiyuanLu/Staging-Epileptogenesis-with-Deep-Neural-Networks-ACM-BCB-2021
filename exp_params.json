@@ -1,0 +1,67 @@
+{
+    "class_colors": ["b","g", "m", "royalblue", "darkslategray", "purple"],
+
+    "batch_size": 128,
+    "test_bs": 512,
+    "epochs": 51,
+    "seed": 458,
+
+    "plot_every": 5,
+    "test_every": null,
+    "save_every": 5,
+    "print_every": 100,
+    "test_freq": 1,
+    "save_summary_every": 2,
+
+    "sr": 512,
+    "secs_per_file": 3600,
+    "secs_per_samp": 5,
+    "secs_per_row": 5,
+    "num_segs": 1,
+    "seq_len": null,
+    "num_hours_per_class": 200,
+    "if_spectrum": false,
+    "fft_len": 256,
+    "frame_len": 512,
+    "frame_step": 32,
+    "days4train": null,
+
+    "height": null,
+    "width": 1,
+    "channels": 1,
+    "header": null,
+
+    "ifnorm": true,
+    "if_coll_certain": false,
+    "cert_theta": 0.999,
+    "is_overwritten_training": false,
+
+    "results_root": "/home/epilepsy-data/data/PPS-rats-from-Sebastian/resultsl-7rats",
+    "results_dir": "/home/epilepsy-data/data/PPS-rats-from-Sebastian/resultsl-7rats",
+    "src_dir": "../../src",
+    "sub_plots_dirs": ["attention_maps", "certain_uncertain", "wrong_examples"],
+    "restore_from": null,
+    "test_only": false,
+    "model_save_dir": null,
+    "class_mode": "BL+2EPG",
+    "data_root":  "/home/epilepsy-data/data/PPS-rats-from-Sebastian",
+    "data_dirs": [
+          "1227",
+          "1237",
+          "1270",
+          "1275",
+          "1276",
+          "32140"
+    ],
+    "file_pattern": "*ori.csv",
+    "data_source": "test-if-gpu",
+    "ctrl_pps_ratio": 3,
+
+    "model_name": "cnn_resi_cam_ecg",
+    "optimizer_name": "adam",
+    "loss_type": "cross_entropy",
+    "learning_rate": 0.0005,
+    "patience": 2,
+    "test_ratio": 0.2
+
+}

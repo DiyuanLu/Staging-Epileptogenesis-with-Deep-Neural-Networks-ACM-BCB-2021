@@ -1,0 +1,110 @@
+{
+    "model": {
+                "cnn":{
+                    "model_name": "cnn",
+                    "out_channels": [16, 32, 32],
+                    "pool_size": [2, 1],
+                    "strides": [2, 1],
+                    "filter_sizes": [[9, 1], [9, 1], [9, 1]],
+                    "fc": [500, 200],
+                    "drop_rates": [0.5, 0.5, 0.5],
+                    "fc_drop_rates": [0.5, 0.5]
+
+                },
+                "cnn_resi":{
+                    "model_name": "cnn_resi",
+                    "out_channels": [16, 32, 32],
+                    "num_layers_in_res": 3,
+                    "pool_size": [3, 1],
+                    "strides": [3, 1],
+                    "filter_sizes": [[9, 1], [9, 1], [9, 1]],
+                    "fc": [500, 200],
+                    "drop_rates": [0.5, 0.5, 0.5],
+                    "fc_drop_rates": [0.5, 0.5]
+
+                },
+                "cnn_resi_ecg":{
+                    "model_name": "cnn_resi_ecg",
+                    "out_channel": 16,
+                    "num_layers_in_res": 2,
+                    "num_res_blocks": 15,
+                    "pool_size": [2, 1],
+                    "stride": [2, 1],
+                    "filter_size": [32, 1],
+                    "fc": [128],
+                    "drop_rate": 0.2,
+                    "fc_drop_rates": [0.5]
+
+                },
+                "cnn_resi_cam_ecg":{
+                    "model_name": "cnn_resi_cam_ecg",
+                    "out_channel": 16,
+                    "num_layers_in_res": 2,
+                    "num_res_blocks": 15,
+                    "pool_size": [2, 1],
+                    "stride": [2, 1],
+                    "filter_size": [32, 1],
+                    "drop_rate": 0.2
+
+                },
+                "cnn_ecg_no_skip":{
+                    "model_name": "cnn_ecg_no_skip",
+                    "out_channel": 16,
+                    "num_layers_in_res": 2,
+                    "num_res_blocks": 4,
+                    "pool_size": [2, 1],
+                    "stride": [2, 1],
+                    "filter_size": [32, 1],
+                    "drop_rate": 0.2
+
+                },
+                "cnn_cam":{
+                    "model_name": "cnn_cam",
+                    "out_channels": [16, 32, 64],
+                    "num_layers_in_res": 2,
+                    "pool_size": [2, 1],
+                    "strides": [2, 1],
+                    "filter_sizes": [65, 1],
+                    "fc": [200],
+                    "drop_rates": [0.65, 0.65, 0.65],
+                    "fc_drop_rates": [ 0.5]
+
+                },
+                "fnn":{
+                    "model_name": "fnn",
+                    "layer_dims": [1024, 256, 128],
+                    "droprate": 0.5
+
+                },
+                "EEGNet":{
+                    "model_name": "EEGNet",
+                    "out_channels": [8, 16, 16],
+                    "kernLength": 256,
+                    "pool_size": [4, 1],
+                    "stride": [4, 1],
+                    "norm_rate": 0.25,
+                    "droprate": 0.2
+
+                },
+                "EEGNet2":{
+                    "model_name": "EEGNet2",
+                    "out_channels": [16, 16, 32, 32, 64, 64, 128],
+                    "kernLength": 256,
+                    "pool_size": [4, 1],
+                    "stride": [4, 1],
+                    "norm_rate": 0.25,
+                    "droprate": 0.2
+
+                },
+                "BLCNN":{
+                "model_name": "BLCNN",
+                "out_channels": [128,128,128,128,128,256,256,256,256],
+                "pool_size": [2, 1],
+                "strides": [2, 1],
+                "filter_sizes": [[7, 1], [7, 1], [7, 1], [7, 1], [7, 1], [5, 1], [5, 1], [5, 1], [3, 1]],
+                "fcs": [100],
+                "droprate": 0.2
+
+        }
+    }
+}
