@@ -5,7 +5,7 @@ The architecture was inspired by the ResNet developed for [Cardiologist-level ar
 ) 
 
 ### Dependecies
-The code was originally developed in tensorflow 1.5X, but with tf.compat.v1, it is also compatible with tensorflow 2.0+
+The code was originally developed in tensorflow 1.5X. One need to adapt the code to tensorflow 2.0+
 
 #### File organization
 * exp_params.json: parameters for running the experiment, including file path, batch size, epochs, etc., 
