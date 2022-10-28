@@ -14,3 +14,5 @@ The code was originally developed in tensorflow 1.5X. One need to adapt the code
 * train.py: detailed training procedure including training, testing steps.
 * dataio_EPG.py: helper functions regarding data loading, IO reading and writing, etc.
 * plots_EPG.py: plot-related helper functions.
+
+#### Data organization
