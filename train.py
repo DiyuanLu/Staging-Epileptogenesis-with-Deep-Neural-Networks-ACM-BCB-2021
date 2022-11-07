@@ -1,6 +1,4 @@
 import logging
-import ipdb
-import gc
 import time
 import pickle
 
@@ -157,12 +155,7 @@ def compute(sess, fetches, compute_batches=100, lr=0.0005, if_get_certain=False)
                     logging.info("{}-th batch, {} contains NaN".format(i, key))
                 else:
                     results[key] = run_all[key]
-        # if if_get_wrong:
-        #     if i in example_batches:  # The first 5 batches are Eyeball dev set
-        #         results = get_wrong_examples(results)
-        if if_get_certain:
-            if i in example_batches:
-                results = get_most_cer_uncertain_samples(results, cer_thsh=0.999, if_check_cam=if_check_cam)
+
     return results
 
 
@@ -188,7 +181,6 @@ def compute_test_only(sess, fetches, args, compute_batches=100, if_get_certain=F
     :return:
     """
     collections = {}
-    if_check_cam = False
     
     results = {key: 0 for key, _ in fetches.items()}
     sum_keys = ["loss", "num_correct", "confusion", "batch_size"]
@@ -198,7 +190,6 @@ def compute_test_only(sess, fetches, args, compute_batches=100, if_get_certain=F
     results.update({key: [] for key in concat_keys})
     
     if "conv" in fetches.keys():
-        if_check_cam = True
         exp_keys = ["labels", "features", "pred_int",
                 "pred_logits", "conv", "gap_w"]
         if if_get_certain:
@@ -219,7 +210,6 @@ def compute_test_only(sess, fetches, args, compute_batches=100, if_get_certain=F
                                        replace=False)
        
     total_counts = 0
-    example_count = 1
     for batch in tqdm(range(compute_batches)):
         ret = sess.run(fetches) # run all tensors
         # run_all.append(ret)  # run all tensors
@@ -238,56 +228,6 @@ def compute_test_only(sess, fetches, args, compute_batches=100, if_get_certain=F
             elif key in exp_keys:
                 results[key] = ret[key]
         
-        if if_get_certain:
-            if batch in example_batches:
-                for key in ret.keys():
-                    collections[key] = ret[key]
-                    
-                collections = get_most_cer_uncertain_samples(collections, cer_thsh=args.cert_theta, if_check_cam=if_check_cam)
-                
-                # if batch % 2 == 0:
-                Plot.plot_cer_uncer_samples(
-                    collections["certain_labels_int"],
-                    collections["certain_pred_int"],
-                    collections["certain_features"], args,
-                    acc=results["num_correct"]/total_counts,
-                    num_figs = 1, postfix="{}-{}batch".format(example_count, len(example_batches)))
-                if if_check_cam:
-                    # inspect class maps
-                    logging.info("----------plot_class_activation_map----------")
-                    class_maps = Plot.get_class_map(
-                        collections["certain_labels_int"].astype(np.int),
-                        collections["certain_conv"].astype(np.float32),
-                        collections["gap_w"],
-                        args.height, args.width)
-                    Plot.plot_class_activation_map(
-                        sess, class_maps,
-                        collections["certain_features"],
-                        collections["certain_labels_int"],
-                        collections["certain_pred_int"], args,
-                        postfix="test-acc-{:.3f}".format(results["num_correct"]/total_counts))
-                # Save all the certain examples for future plotting
-                with open(args.results_dir + '/certain_uncertain/certain_examples_of_{}_acc_{:.3f}_{}out{}-bch.txt'.format(args.data_source, results["num_correct"]/total_counts, example_count, len(example_batches)),
-                          'wb') as f:
-                    if "conv" in fetches.keys():
-                        pickle.dump({
-                            "certain_features": np.array(collections["certain_features"]),
-                            "certain_labels_int": np.array(collections["certain_labels_int"]),
-                            "certain_pred_int": np.array(collections["certain_pred_int"]),
-                            "certain_conv": np.array(collections["certain_conv"]),
-                            "gap_w": np.array(collections["gap_w"]),
-                            }, f)
-                    else:
-                        pickle.dump({
-                            "certain_features": np.array(collections["certain_features"]),
-                            "certain_labels_int": np.array(collections["certain_labels_int"]),
-                            "certain_pred_int": np.array(collections["certain_pred_int"])
-                            }, f)
-        
-                # clean for each batch to save memory
-                collections = {key: [] for key in exp_keys}
-                example_count += 1
-                gc.collect()
     logging.info("Saved data info collection")
 
     return results
@@ -398,63 +338,6 @@ def reduce_lr_on_plateu(lr, acc_history, factor=0.1, patience=4,
     return new_lr
 
 
-def get_most_cer_uncertain_samples(results, cer_thsh=0.999, if_check_cam=True):
-    """
-    Get num2get wrong examples
-    :param results: dict, with keys "wrong_BL", "wrong_EPG"
-    :param cer_thsh: how many examples to collect
-    :return:
-    """
-    labels_int = np.argmax(results["labels"], axis=1)
-    pred_int = results["pred_int"]
-    certain_inds = np.where(np.sum(results["pred_logits"] > cer_thsh, axis=1) == 1)[0].astype(np.int)
-    data_len = results["features"].shape[-1]
-    if if_check_cam:
-        conv_shape = results["conv"].shape
-    
-    if certain_inds.size != 0:
-        if len(results["certain_features"]) == 0:
-            results["certain_features"] = np.empty((0, data_len))
-            results["certain_labels_int"] = np.empty(0)
-            results["certain_pred_int"] = np.empty(0)
-            if if_check_cam:
-                results["certain_conv"] = np.empty(results["conv"].shape)
-
-        results["certain_features"] = np.vstack(
-            (results["certain_features"], results["features"][certain_inds]))
-        results["certain_labels_int"] = np.append(results["certain_labels_int"], labels_int[certain_inds]).astype(np.int)
-        results["certain_pred_int"] = np.append(results["certain_pred_int"], pred_int[certain_inds]).astype(np.int)
-        if if_check_cam:
-            results["certain_conv"] = np.vstack(
-                (results["certain_conv"], results["conv"][certain_inds]))
-
-    return results
-
-
-def get_wrong_examples(results):
-    """
-    Get num2get wrong examples
-    :param results: dict, with keys "wrong_BL", "wrong_EPG"
-    :return:
-    """
-    labels_int = np.argmax(results["labels"], axis=1)
-    wrong_inds = np.where(labels_int != results["pred_int"])[0]
-    data_len = results["features"].shape[-1]
-    if len(wrong_inds) != 0:
-        if len(results["wrong_features"]) == 0:
-            results["wrong_features"] = np.empty((0, data_len))
-            results["wrong_labels"] = np.empty(0)
-            results["wrong_features"] = np.vstack(
-                (results["wrong_features"], results["features"][wrong_inds]))
-            results["wrong_labels"] = np.append(results["wrong_labels"], labels_int[wrong_inds]).astype(np.int)
-        else:
-            results["wrong_features"] = np.vstack(
-                (results["wrong_features"], results["features"][wrong_inds]))
-            results["wrong_labels"] = np.append(results["wrong_labels"], labels_int[wrong_inds]).astype(np.int)
-
-    return results
-
-
 def get_cam_examples(results, max_num=60):
     """
     Get CAM examples for further plot
@@ -509,8 +392,6 @@ def get_cam_examples(results, max_num=60):
 
     return results
 #
-
-#-----------------------------------------------------------------------------------------
 
 def training(sess, model_aspect, args):
     """
@@ -817,9 +698,6 @@ def run(model_aspect, args):
             init_ops = [model_aspect["test_iter_init"]]
             # Initialize the dataset iterators
             initialize_ops(sess, init_ops)
-            # PLot kernels
-            kernels = [v for v in tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES) if v.name.endswith('kernel:0')]
-            # Plot.plot_all_kernels(sess, kernels, save_name=args.results_dir)
             if_check_cam = True if 'cam' in args.model_name else False
             testing(sess,
                     model_aspect, args,

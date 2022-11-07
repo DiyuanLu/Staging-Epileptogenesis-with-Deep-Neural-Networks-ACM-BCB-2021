@@ -36,15 +36,14 @@
     "cert_theta": 0.999,
     "is_overwritten_training": false,
 
-    "results_root": "/home/epilepsy-data/data/PPS-rats-from-Sebastian/resultsl-7rats",
-    "results_dir": "/home/epilepsy-data/data/PPS-rats-from-Sebastian/resultsl-7rats",
-    "src_dir": "../../src",
+    "results_root": "results",
+    "src_dir": "src",
     "sub_plots_dirs": ["attention_maps", "certain_uncertain", "wrong_examples"],
     "restore_from": null,
     "test_only": false,
     "model_save_dir": null,
     "class_mode": "BL+2EPG",
-    "data_root":  "/home/epilepsy-data/data/PPS-rats-from-Sebastian",
+    "data_root":  "data",
     "data_dirs": [
           "1227",
           "1237",

@@ -47,7 +47,6 @@ def get_variables_from_graph(layer, *args):
 	return variable
 
 
-# -----need------
 def post_process(logits, labels_hot, args):
 	"""
 	POst process the predictions
@@ -68,7 +67,6 @@ def post_process(logits, labels_hot, args):
 	return post_pred_hot, post_pred_int, labels_int
 
 
-# -----need------
 def get_loss(args, logits, labels_hot):
 	"""
 	Get loss given loss type
@@ -87,7 +85,6 @@ def get_loss(args, logits, labels_hot):
 	return loss
 
 
-# -----need------
 def get_num_correct(logits, labels_hot):
 	"""
 	Get the number of correct predicted labels for future average
@@ -100,7 +97,6 @@ def get_num_correct(logits, labels_hot):
 	return num_correct
 
 
-# -----need------
 def get_train_op(args, loss, learning_rate):
 	optimizer_type = args.optimizer_name
 	# lr = args.learning_rate
@@ -120,7 +116,6 @@ def get_train_op(args, loss, learning_rate):
 	return optimizer
 
 
-# -----need------
 def get_graph(inputs, args):
 	"""Model function defining the graph operations.
 	params:
@@ -185,7 +180,6 @@ def get_graph(inputs, args):
 	return model_aspect
 
 
-# -----need------
 def construct_model(features, args, is_train=False):
 	"""Compute logits of the model (output distribution)
 	Args:
@@ -201,8 +195,6 @@ def construct_model(features, args, is_train=False):
 		outputs = construct_cnn_resi_cam_ecg(features, args, is_train=is_train)
 	elif args.model_name == "fnn":
 		outputs = construct_fnn(features, args, is_train=is_train)
-	elif args.model_name == "EEGNet" or args.model_name == "EEGNet2":
-		outputs = construct_EEGNet(features, args, is_train=is_train)
 	else:
 		print("No corresponsing construct function is foind!")
 	
@@ -254,7 +246,7 @@ def highway_block_cnn(x, filter_size=[9, 1], out_channels=[8], block_id=0):
 	:return:
 	"""
 	assert len(x.shape) > 2, (
-		'Should input image-like shape')  ## to do conv using batch_size * height * width * channel
+			'Should input image-like shape')  ## to do conv using batch_size * height * width * channel
 	
 	with tf.compat.v1.variable_scope("highway_block" + str(block_id), reuse=tf.compat.v1.AUTO_REUSE):
 		H = tf.compat.v1.layers.conv2d(
@@ -663,117 +655,4 @@ def construct_fnn(x, args, is_train=True):
 	outputs["total_trainables"] = np.sum([np.product([xi.value for xi in x.get_shape()]) for x in all_trainable_vars])
 	print("total_trainables", outputs["total_trainables"])
 	outputs["logits"] = logits
-	return outputs
-
-
-def construct_EEGNet(features, args, is_train=True):
-	""" Keras Implementation of EEGNet
-	http://iopscience.iop.org/article/10.1088/1741-2552/aace8c/meta
-	total trainables = 39379  # ecg-resi=4200048
-	Note that this implements the newest version of EEGNet and NOT the earlier
-	version (version v1 and v2 on arxiv). We strongly recommend using this
-	architecture as it performs much better and has nicer properties than
-	our earlier version. For example:
-
-		1. Depthwise Convolutions to learn spatial filters within a
-		temporal convolution. The use of the depth_multiplier option maps
-		exactly to the number of spatial filters learned within a temporal
-		filter. This matches the setup of algorithms like FBCSP which learn
-		spatial filters within each filter in a filter-bank. This also limits
-		the number of free parameters to fit when compared to a fully-connected
-		convolution.
-
-		2. Separable Convolutions to learn how to optimally combine spatial
-		filters across temporal bands. Separable Convolutions are Depthwise
-		Convolutions followed by (1x1) Pointwise Convolutions.
-
-
-	Assumes the input signal is sampled at 128Hz. If you want to use this model
-	for any other sampling rate you will need to modify the lengths of temporal
-	kernels and average pooling size in blocks 1 and 2 as needed (double the
-	kernel lengths for double the sampling rate, etc). Note that we haven't
-	tested the model performance with this rule so this may not work well.
-
-	The model with default parameters gives the EEGNet-8,2 model as discussed
-	in the paper. This model should do pretty well in general, although it is
-	advised to do some model searching to get optimal performance on your
-	particular dataset.
-
-	We set F2 = F1 * D (number of input filters = number of output filters) for
-	the SeparableConv2D layer. We haven't extensively tested other values of this
-	parameter (say, F2 < F1 * D for compressed learning, and F2 > F1 * D for
-	overcomplete). We believe the main parameters to focus on are F1 and D.
-
-	Inputs:
-
-	  nb_classes      : int, number of classes to classify
-	  Chans, Samples  : number of channels and time points in the EEG data
-	  dropoutRate     : dropout fraction
-	  kernLength      : length of temporal convolution in first layer. We found
-						that setting this to be half the sampling rate worked
-						well in practice. For the SMR dataset in particular
-						since the data was high-passed at 4Hz we used a kernel
-						length of 32.
-	  F1, F2          : number of temporal filters (F1) and number of pointwise
-						filters (F2) to learn. Default: F1 = 8, F2 = F1 * D.
-	  D               : number of spatial filters to learn within each temporal
-						convolution. Default: D = 2
-	  dropoutType     : Either SpatialDropout2D or Dropout, passed as a string.
-
-	"""
-	
-	# input1 = Input(shape=(1, args.data_ch, height))
-	net = tf.reshape(features, [-1, args.height, args.width, args.channels])
-	outputs = {}
-	activities = {}
-	##################################################################
-	# block1 = Conv2D(F1, (1, kernLength), padding='same',
-	#                 input_shape=(1, Chans, Samples),
-	#                 use_bias=False)(input1)
-	for ind, num_channels in enumerate(args.out_channels[0:-1]):
-		drop = 0 if ind == 0 else args.droprate
-		if_maxpool = True if ind % 2 == 0 and ind != 0 else False
-		net, activities = single_cnn(net, num_channels,
-		                             [args.kernLength, 1], args.pool_size,
-		                             args.stride, drop, activities, is_train=is_train,
-		                             layer_id="{}".format(ind), if_maxpool=if_maxpool)
-	
-	with tf.compat.v1.variable_scope('layer{}'.format(ind + 1),
-	                                 reuse=tf.compat.v1.AUTO_REUSE) as scope:
-		net = tf.compat.v1.layers.conv2d(
-				inputs=net,
-				filters=args.out_channels[-1],
-				kernel_size=[args.kernLength, 1],
-				padding='SAME',
-				kernel_initializer=initializer,
-				kernel_regularizer=regularizer,
-				activation=tf.nn.relu)
-		print(ind + 3, "conv", net.shape.as_list())
-	
-	with tf.compat.v1.variable_scope('fc',
-	                                 reuse=tf.compat.v1.AUTO_REUSE) as scope:
-		# flatten = Flatten(name='flatten')(block2)
-		net = tf.compat.v1.layers.flatten(net)
-		# dense = Dense(num_classes, name='dense',
-		#               kernel_constraint=max_norm(norm_rate))(flatten)
-		print("flatten", net.shape.as_list())
-		outputs["b4softmax"] = net
-		logits = tf.compat.v1.layers.dense(net,
-		                                   units=args.num_classes,
-		                                   # kernel_constraint=tf.keras.constraints.max_norm(args.norm_rate),
-		                                   kernel_initializer=initializer,
-		                                   activation=tf.nn.softmax)
-	# softmax = Activation('softmax', name='softmax')(dense)
-	kernels = {}  #### implement attention
-	##### track all variables
-	all_trainable_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES)
-	outputs["total_trainables"] = np.sum([np.product([xi.value for xi in x.get_shape()]) for x in all_trainable_vars])
-	print("total_trainables", outputs["total_trainables"])
-	for var in all_trainable_vars:
-		if 'kernel' in var.name:
-			kernels[var.name] = var
-	
-	outputs["logits"] = logits
-	outputs["kernels"] = kernels
-	
 	return outputs

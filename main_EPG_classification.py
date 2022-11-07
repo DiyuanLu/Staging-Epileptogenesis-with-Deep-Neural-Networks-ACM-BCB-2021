@@ -15,7 +15,7 @@ from arguments import get_basic_EEG_params, get_proj_args
 import dataio_EPG as data_io
 import get_graphs as mod
 from train import run
-tf.compat.v1.disable_v2_behavior()
+# tf.compat.v1.disable_v2_behavior()
 # tf.enable_eager_execution()
 
 def get_available_gpus():
