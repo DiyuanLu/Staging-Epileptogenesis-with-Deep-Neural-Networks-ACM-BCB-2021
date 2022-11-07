@@ -16,3 +16,4 @@ The code was originally developed in tensorflow 1.5X. One need to adapt the code
 * plots_EPG.py: plot-related helper functions.
 
 #### Data organization
+<img width="407" alt="Screenshot 2022-11-07 at 18 32 40" src="https://user-images.githubusercontent.com/22638701/200376688-f6c0c338-d639-4da1-831c-469d48242fed.png">
